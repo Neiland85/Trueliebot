@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+import re
 
 app = Flask(__name__)
 
@@ -19,9 +20,16 @@ QUESTIONS = [
 
 def analyze_conversation(conversation):
     score = 0
+    words = re.findall(r'\b\w+\b', conversation.lower())
+    conversation_length = len(words)
+
     for word, value in KEYWORDS.items():
-        if word in conversation.lower():
-            score += value
+        word_count = words.count(word)
+        score += word_count * value
+    
+    if conversation_length > 0:
+        score /= conversation_length
+
     return score
 
 def get_user_profile(answers):
@@ -64,9 +72,9 @@ def adapt_response(result, profile):
     return response
 
 def determine_result(score):
-    if score > 5:
+    if score > 0.03:
         result = "No fiable"
-    elif score > 2:
+    elif score > 0.015:
         result = "Posiblemente sospechoso"
     else:
         result = "Fiable"
