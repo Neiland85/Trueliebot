@@ -1,5 +1,12 @@
 from flask import Flask, request, jsonify
 import re
+import os
+import openai
+from dotenv import load_dotenv
+
+load_dotenv()
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 
@@ -19,6 +26,15 @@ QUESTIONS = [
 ]
 
 def analyze_conversation(conversation):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"Analiza esta conversación de WhatsApp en busca de posibles señales de engaño o manipulación:\n\n{conversation}",
+        max_tokens=150,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+
     score = 0
     words = re.findall(r'\b\w+\b', conversation.lower())
     conversation_length = len(words)
@@ -26,11 +42,26 @@ def analyze_conversation(conversation):
     for word, value in KEYWORDS.items():
         word_count = words.count(word)
         score += word_count * value
-    
+
     if conversation_length > 0:
         score /= conversation_length
-
+        gpt_influence = 0.01
+        sentiment = analyze_sentiment(response.choices[0].text)
+        if sentiment == "negative":
+            score += gpt_influence
     return score
+
+def analyze_sentiment(text):
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=f"Determina el sentimiento general de este texto: {text}. Responde con 'positive' o 'negative'",
+        max_tokens=1,
+        n=1,
+        stop=None,
+        temperature=0.5,
+    )
+    sentiment = response.choices[0].text.strip().lower()
+    return sentiment
 
 def get_user_profile(answers):
     profile = ""
