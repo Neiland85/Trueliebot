@@ -4,6 +4,7 @@ import os
 import openai
 from dotenv import load_dotenv
 import logging
+import sqlite3
 
 load_dotenv()
 
@@ -12,7 +13,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 app = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 
 KEYWORDS = {
     "préstamo": 3,
@@ -28,6 +28,25 @@ QUESTIONS = [
     "¿Cómo reaccionas ante la presión social? (a) Me dejo influenciar fácilmente, (b) Evalúo la situación antes de actuar, (c) Me mantengo firme en mis decisiones",
     "¿Confías fácilmente en las personas? (a) Sí, tiendo a confiar en la mayoría de las personas, (b) Confío después de conocerlas un poco, (c) Soy cauteloso y me cuesta confiar",
 ]
+
+def create_tables():
+    conn = sqlite3.connect('conversations.db')
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation TEXT,
+            answers TEXT,
+            score REAL,
+            result TEXT,
+            profile TEXT,
+            response TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+create_tables()
 
 def analyze_conversation(conversation):
     try:
@@ -67,6 +86,7 @@ def analyze_conversation(conversation):
     except openai.error.OpenAIError as e:
         print(f"Error en la API de OpenAI: {e}")
         return -1
+
 
 def get_user_profile(answers):
     profile = ""
@@ -116,6 +136,7 @@ def determine_result(score):
         result = "Fiable"
     return result
 
+
 @app.route('/analyze', methods=['POST'])
 def analyze_conversation_route():
     conversation = request.json.get('conversation')
@@ -135,7 +156,50 @@ def analyze_conversation_route():
 
     logging.info(f"Resultado del análisis: resultado={result}, puntuación={score}, perfil={profile}, respuesta={adapted_response}")
 
+    try:
+        conn = sqlite3.connect('conversations.db')
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO conversations (conversation, answers, score, result, profile, response)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (conversation, str(answers), score, result, profile, adapted_response))
+        conn.commit()
+        conn.close()
+    except sqlite3.Error as e:
+        logging.error(f"Error de base de datos: {e}")
+        return jsonify({'error': 'Error al guardar en la base de datos'}), 500
+
     return jsonify({'result': result, 'score': score, 'profile': profile, 'response': adapted_response, 'questions': QUESTIONS})
+
+
+@app.route('/history', methods=['GET'])
+def get_history():
+    try:
+        conn = sqlite3.connect('conversations.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM conversations")
+        rows = cursor.fetchall()
+        conn.close()
+
+        history = []
+        for row in rows:
+            history.append({
+                'id': row[0],
+                'conversation': row[1],
+                'answers': eval(row[2]),
+                'score': row[3],
+                'result': row[4],
+                'profile': row[5],
+                'response': row[6]
+            })
+
+        return jsonify(history)
+
+    except sqlite3.Error as e:
+        logging.error(f"Error de base de datos: {e}")
+        return jsonify({'error': 'Error al acceder a la base de datos'}), 500
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
