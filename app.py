@@ -48,6 +48,7 @@ def create_tables():
 
 create_tables()
 
+
 def analyze_conversation(conversation):
     try:
         response = openai.Completion.create(
@@ -83,10 +84,9 @@ def analyze_conversation(conversation):
 
         return score
 
-    except openai.error.OpenAIError as e:
+    except openai.OpenAIError as e:
         print(f"Error en la API de OpenAI: {e}")
         return -1
-
 
 def get_user_profile(answers):
     profile = ""
@@ -103,15 +103,22 @@ def get_user_profile(answers):
         profile = "B"
     return profile
 
+
 def adapt_response(result, profile):
+
     if result == "No fiable":
+
         if profile == "A":
             response = "Ten mucho cuidado.  Habla con alguien de confianza."
+
         elif profile == "B":
             response = "El análisis indica alto riesgo. Investiga más."
+
         elif profile == "C":
             response = "¡Mucho cuidado!  Bloquea el contacto."
+
     elif result == "Posiblemente sospechoso":
+
         if profile == "A":
             response = "Sé prudente. Podría ser sospechoso."
         elif profile == "B":
@@ -119,22 +126,37 @@ def adapt_response(result, profile):
         elif profile == "C":
             response = "Mantén la cautela."
     else:
+
         if profile == "A":
             response = "El análisis indica que es fiable. Pero sigue siendo prudente."
+
+
         elif profile == "B":
             response = "Parece ser una conversación fiable. "
+
         elif profile == "C":
             response = "El análisis indica fiabilidad."
+
     return response
 
 def determine_result(score):
+
+
     if score > 0.03:
         result = "No fiable"
+
     elif score > 0.015:
+
+
         result = "Posiblemente sospechoso"
     else:
+
+
         result = "Fiable"
     return result
+
+
+
 
 
 @app.route('/analyze', methods=['POST'])
@@ -142,64 +164,118 @@ def analyze_conversation_route():
     conversation = request.json.get('conversation')
     answers = request.json.get('answers')
 
+
+
+
     logging.info(f"Solicitud recibida: conversación={conversation}, respuestas={answers}")
 
+
+
+
     score = analyze_conversation(conversation)
+
+
+
 
     if score == -1:
         logging.error("Error en la API de OpenAI")
         return jsonify({'error': 'Error en la API de OpenAI'}), 500
 
+
+
+
     result = determine_result(score)
     profile = get_user_profile(answers)
     adapted_response = adapt_response(result, profile)
 
+
+
+
     logging.info(f"Resultado del análisis: resultado={result}, puntuación={score}, perfil={profile}, respuesta={adapted_response}")
+
+
 
     try:
         conn = sqlite3.connect('conversations.db')
         cursor = conn.cursor()
+
+
+
         cursor.execute('''
             INSERT INTO conversations (conversation, answers, score, result, profile, response)
             VALUES (?, ?, ?, ?, ?, ?)
+
         ''', (conversation, str(answers), score, result, profile, adapted_response))
         conn.commit()
         conn.close()
-    except sqlite3.Error as e:
+
+
+
+    except sqlite3.Error as e:  #Capturar errores de SQLite
+
+
         logging.error(f"Error de base de datos: {e}")
-        return jsonify({'error': 'Error al guardar en la base de datos'}), 500
+
+
+
+        return jsonify({'error': 'Error al guardar en la base de datos'}), 500 #Error 500 para errores internos
+
 
     return jsonify({'result': result, 'score': score, 'profile': profile, 'response': adapted_response, 'questions': QUESTIONS})
 
 
+
+
+
+
 @app.route('/history', methods=['GET'])
+
+
 def get_history():
     try:
+
         conn = sqlite3.connect('conversations.db')
+
+
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM conversations")
+
         rows = cursor.fetchall()
+
+
         conn.close()
 
         history = []
+
+
         for row in rows:
+
+
             history.append({
                 'id': row[0],
                 'conversation': row[1],
+
                 'answers': eval(row[2]),
                 'score': row[3],
                 'result': row[4],
                 'profile': row[5],
                 'response': row[6]
+
+
             })
 
         return jsonify(history)
 
-    except sqlite3.Error as e:
+
+
+    except sqlite3.Error as e:  # Capturar errores de SQLite
         logging.error(f"Error de base de datos: {e}")
+
+
         return jsonify({'error': 'Error al acceder a la base de datos'}), 500
 
 
-
 if __name__ == '__main__':
+
+
     app.run(debug=True)
