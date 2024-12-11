@@ -30,21 +30,21 @@ def ask_openai():
 
 @app.route('/api/conversations', methods=['GET'])
 def get_conversations():
-    profile = request.args.get('profile', 'default')  # Perfil predeterminado es "default"
+    profile = request.args.get('profile', 'default')
 
-    connection = sqlite3.connect('conversations.db')
-    cursor = connection.cursor()
+    try:
+        connection = sqlite3.connect('conversations.db')
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM conversations WHERE profile = ?", (profile,))
+        rows = cursor.fetchall()
+        connection.close()
 
-    # Obtener conversaciones del perfil solicitado
-    cursor.execute("SELECT * FROM conversations WHERE profile = ?", (profile,))
-    rows = cursor.fetchall()
-
-    connection.close()
-
-    if rows:
-        return jsonify({'status': 'success', 'data': rows})
-    else:
-        return jsonify({'status': 'error', 'message': 'No se encontraron conversaciones para este perfil.'}), 404
+        if rows:
+            return jsonify({'status': 'success', 'data': rows})
+        else:
+            return jsonify({'status': 'error', 'message': 'No se encontraron conversaciones para este perfil.'}), 404
+    except sqlite3.Error as e:
+        return jsonify({'status': 'error', 'message': f'Error en la base de datos: {str(e)}'}), 500
 
 @app.route('/')
 def home():
