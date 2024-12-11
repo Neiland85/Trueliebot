@@ -31,14 +31,12 @@ def ask_openai():
 @app.route('/api/conversations', methods=['GET'])
 def get_conversations():
     profile = request.args.get('profile', 'default')
-
     try:
         connection = sqlite3.connect('conversations.db')
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM conversations WHERE profile = ?", (profile,))
         rows = cursor.fetchall()
         connection.close()
-
         if rows:
             return jsonify({'status': 'success', 'data': rows})
         else:
@@ -52,4 +50,5 @@ def home():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
 

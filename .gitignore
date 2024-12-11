@@ -1,5 +1,9 @@
-# Python
+# Pythony
 __pycache__/
+*.pyc
+instance/
+.env
+*.db
 *.py[cod]
 *$py.class
 
