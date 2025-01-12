@@ -1,18 +1,16 @@
-# Pythony
+# Python
 __pycache__/
 *.pyc
-instance/
-.env
-*.db
+*.pyo
 *.py[cod]
-*$py.class
+instance/
+*.env
+*.db
+*.sqlite3
 
 # Virtual Environment
 .venv/
-.env
-
-# Database
-conversations.db
+.env/
 
 # Logs
 *.log
@@ -23,6 +21,7 @@ conversations.db
 
 # Byte-compiled / optimized / DLL files
 *.pyo
+*.pyc
 *.py,cover
 .cover
 
@@ -30,4 +29,11 @@ conversations.db
 .mypy_cache/
 .pyre/
 .pytype/
+
+# System Files
+.DS_Store
+
+# Database
+conversations.db
+*.sqlite
 
