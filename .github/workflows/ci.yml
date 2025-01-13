@@ -11,18 +11,16 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     steps:
-      # Configurar repositorio
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Configurar Python
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.11"
 
-      # Instalar dependencias
       - name: Install dependencies
         run: |
           python -m venv .venv
@@ -30,14 +28,18 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Exportar variables de entorno desde .env
-      - name: Load environment variables
+      - name: Set environment variables
         run: |
-          set -o allexport
-          source .env || true
-          set +o allexport
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
+          echo "DATABASE_NAME=conversations.db" >> .env
+          echo "FLASK_ENV=development" >> .env
+          echo "DEBUG=True" >> .env
 
-      # Ejecutar pruebas
+      - name: Initialize database
+        run: |
+          source .venv/bin/activate
+          python initialize_db.py
+
       - name: Run tests
         run: |
           source .venv/bin/activate
