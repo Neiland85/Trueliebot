@@ -20,7 +20,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       # Instalar dependencias
       - name: Install dependencies
@@ -29,6 +29,13 @@ jobs:
           source .venv/bin/activate
           pip install --upgrade pip
           pip install -r requirements.txt
+
+      # Exportar variables de entorno desde .env
+      - name: Load environment variables
+        run: |
+          set -o allexport
+          source .env || true
+          set +o allexport
 
       # Ejecutar pruebas
       - name: Run tests
