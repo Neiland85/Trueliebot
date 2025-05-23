@@ -28,20 +28,22 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Set environment variables
-        run: |
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
-          echo "DATABASE_NAME=conversations.db" >> .env
-          echo "FLASK_ENV=development" >> .env
-          echo "DEBUG=True" >> .env
-
       - name: Initialize database
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_NAME: conversations.db
+          FLASK_ENV: development
+          DEBUG: "True"
         run: |
           source .venv/bin/activate
           python initialize_db.py
 
       - name: Run tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_NAME: conversations.db
+          FLASK_ENV: development
+          DEBUG: "True"
         run: |
           source .venv/bin/activate
           pytest --maxfail=5 --disable-warnings
-

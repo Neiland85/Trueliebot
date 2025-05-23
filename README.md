@@ -108,3 +108,41 @@ Copiar código
 
 7. **Licencia**:
    Indica cómo se puede usar el proyecto.
+
+---
+
+## Despliegue rápido en Heroku/Render
+
+### Heroku
+1. Instala Heroku CLI y haz login.
+2. Ejecuta:
+   ```bash
+   heroku create nombre-de-tu-app
+   heroku config:set OPENAI_API_KEY=tu_clave_openai
+   git push heroku main
+   heroku open
+   ```
+
+### Render
+1. Ve a https://dashboard.render.com y crea un nuevo Web Service.
+2. Elige tu repo y configura:
+   - Start command: `python app.py`
+   - Environment: Python 3.11
+   - Añade la variable OPENAI_API_KEY
+
+### Docker (opcional)
+Si quieres usar Docker, crea un archivo `Dockerfile` así:
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY . .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+EXPOSE 5000
+CMD ["python", "app.py"]
+```
+
+Luego ejecuta:
+```bash
+docker build -t trueliebot .
+docker run -p 5000:5000 trueliebot
+```

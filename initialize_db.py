@@ -1,5 +1,6 @@
 import sqlite3
 
+
 def initialize_database():
     connection = sqlite3.connect("conversations.db")
     cursor = connection.cursor()
@@ -8,24 +9,29 @@ def initialize_database():
     cursor.execute("DROP TABLE IF EXISTS conversations")
 
     # Crear la tabla con la estructura correcta
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE IF NOT EXISTS conversations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             profile TEXT NOT NULL,
             message TEXT NOT NULL
         )
-    """)
+        """
+    )
 
-    # Insertar datos de prueba
-    cursor.execute("""
-        INSERT INTO conversations (profile, message)
-        VALUES (?, ?)
-    """, ("default", "Hola, esta es una conversación de prueba."))
+    # Crear índice para mejorar el rendimiento de las búsquedas por perfil
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_profile ON conversations(profile)")
+
+    # Insertar múltiples datos de prueba para probar la paginación
+    mensajes = [("default", f"Mensaje de prueba número {i}") for i in range(1, 51)]
+    cursor.executemany(
+        "INSERT INTO conversations (profile, message) VALUES (?, ?)", mensajes
+    )
 
     connection.commit()
     connection.close()
-    print("Base de datos inicializada correctamente.")
+    print("Base de datos inicializada correctamente con 50 mensajes de prueba.")
+
 
 if __name__ == "__main__":
     initialize_database()
-

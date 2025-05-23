@@ -1,63 +1,37 @@
-from flask import Flask, request, jsonify
-import sqlite3
+from flask import Flask, send_from_directory
+from flask_swagger_ui import get_swaggerui_blueprint
+from routes_conversations import conversations_bp
 
 app = Flask(__name__)
+app.register_blueprint(conversations_bp)
 
-# Configuración de la base de datos
-DB_NAME = "conversations.db"
 
-def get_db_connection():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-# Endpoint raíz para verificar el estado de la API
-@app.route('/', methods=['GET'])
+@app.route("/", methods=["GET"])
 def home():
+    """Endpoint raíz para verificar el estado de la API."""
     return "API de gestión de conversaciones activa.", 200
 
-# Endpoint GET /api/conversations
-@app.route('/api/conversations', methods=['GET'])
-def get_conversations():
-    try:
-        profile = request.args.get('profile', 'default')
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM conversations WHERE profile = ?", (profile,))
-        conversations = cursor.fetchall()
-        conn.close()
 
-        if not conversations:
-            return jsonify({"message": "No conversations found"}), 404
-        
-        data = [{"id": row["id"], "profile": row["profile"], "message": row["message"]} for row in conversations]
-        return jsonify({"data": data, "status": "success"}), 200
-    except Exception as e:
-        app.logger.error(f"Error in GET /api/conversations: {str(e)}")
-        return jsonify({"error": "Internal Server Error"}), 500
+@app.route("/favicon.ico")
+def favicon():
+    """Sirve el favicon para evitar errores 404 en navegadores."""
+    return send_from_directory(
+        app.root_path,
+        "favicon.ico",
+        mimetype="image/vnd.microsoft.icon",
+    )
 
-# Endpoint POST /api/conversations
-@app.route('/api/conversations', methods=['POST'])
-def post_conversations():
-    try:
-        data = request.get_json()
-        profile = data.get("profile")
-        message = data.get("message")
 
-        if not profile or not message:
-            return jsonify({"error": "Invalid data"}), 400
+# Swagger/OpenAPI docs
+SWAGGER_URL = "/docs"
+API_URL = "/static/swagger.json"
+swaggerui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={"app_name": "TruelieBot API"},
+)
+app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO conversations (profile, message) VALUES (?, ?)", (profile, message))
-        conn.commit()
-        conn.close()
 
-        return jsonify({"message": "Conversation created"}), 201
-    except Exception as e:
-        app.logger.error(f"Error in POST /api/conversations: {str(e)}")
-        return jsonify({"error": "Internal Server Error"}), 500
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(debug=True)
-
