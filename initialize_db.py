@@ -1,7 +1,12 @@
+"""
+Script para inicializar la base de datos SQLite con datos de prueba.
+"""
+
 import sqlite3
 
 
 def initialize_database():
+    """Crea la base de datos y la tabla de conversaciones con datos de ejemplo."""
     connection = sqlite3.connect("conversations.db")
     cursor = connection.cursor()
 

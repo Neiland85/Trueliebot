@@ -1,3 +1,8 @@
+"""
+Módulo principal de la aplicación Flask para TruelieBot.
+Se encarga de inicializar la app, registrar blueprints y exponer la documentación Swagger.
+"""
+
 from flask import Flask, send_from_directory
 from flask_swagger_ui import get_swaggerui_blueprint
 from routes_conversations import conversations_bp
