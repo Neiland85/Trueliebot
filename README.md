@@ -146,3 +146,136 @@ Luego ejecuta:
 docker build -t trueliebot .
 docker run -p 5000:5000 trueliebot
 ```
+
+## Endpoint de integración con OpenAI
+
+### `/api/openai` (POST)
+
+Permite enviar un prompt y obtener una respuesta generada por OpenAI GPT-3.5-turbo.
+
+**Request:**
+```json
+{
+  "prompt": "¿Cuál es la capital de Francia?"
+}
+```
+
+**Response (producción):**
+```json
+{
+  "response": "París"
+}
+```
+
+**Modo Mock para pruebas locales**
+
+Si defines la variable de entorno `MOCK_OPENAI=1`, el endpoint responderá siempre con `"París"` sin consumir tu cuota de OpenAI. Esto permite testear y desarrollar sin depender de la API real.
+
+**Ejemplo de uso en local:**
+
+```sh
+export MOCK_OPENAI=1
+python app.py
+```
+
+**Test automatizado:**
+
+El endpoint está cubierto por tests automáticos. Si usas `MOCK_OPENAI=1`, los tests no requieren acceso real a la API de OpenAI.
+
+## Integración de cita científica y consejos en `/api/openai`
+
+Ahora el endpoint `/api/openai` no solo responde con la respuesta generada por OpenAI, sino que también analiza el prompt recibido. Si detecta palabras clave relacionadas con manipulación, mentira o técnicas de detección, la respuesta incluirá automáticamente:
+- `study_citation`: cita científica relevante.
+- `study_summary`: resumen del estudio científico.
+- `advice`: lista de consejos para afrontar situaciones de manipulación o engaño.
+
+### Ejemplo de uso
+
+**Request:**
+```json
+{
+  "prompt": "¿Cómo detectar una microexpresión en una conversación?"
+}
+```
+
+**Response:**
+```json
+{
+  "response": "Las microexpresiones son expresiones faciales involuntarias...",  
+  "study_citation": "Ekman, P., & Friesen, W. V. (1975). Unmasking the face.",
+  "study_summary": "Identificación de microexpresiones faciales involuntarias que delatan emociones ocultas.",
+  "advice": [
+    "Mantén la calma: No respondas con ira ni impulsividad, respira profundo antes de actuar.",
+    "No te culpes: Recuerda que la responsabilidad de la mentira o manipulación es del depredador, no tuya.",
+    "Documenta los hechos: Lleva un registro de las situaciones, mensajes o comportamientos sospechosos.",
+    "Evita la confrontación directa: Si es posible, busca el diálogo en un entorno seguro y sin acusaciones.",
+    "Haz preguntas abiertas: Permite que la otra persona explique, en vez de acusar directamente.",
+    "Busca apoyo: Habla con amigos, familiares o un profesional sobre lo que estás viviendo.",
+    "Pon límites claros: Expresa de manera asertiva lo que no toleras y cuáles son tus valores.",
+    "No te aísles: Mantén tu red de apoyo y actividades que te hagan sentir bien.",
+    "Infórmate: Aprende sobre técnicas de manipulación y cómo protegerte emocionalmente.",
+    "Si la situación es grave, busca ayuda profesional o legal: Tu bienestar y seguridad son lo más importante."
+  ]
+}
+```
+
+Si el prompt no contiene ninguna palabra clave relevante, la respuesta será únicamente el campo `response` con la respuesta generada por OpenAI.
+
+## Citas científicas automáticas en las conversaciones
+
+Cuando envías un mensaje a `/api/conversations` que contiene palabras clave relacionadas con estudios científicos sobre detección de mentiras (por ejemplo: "microexpresion", "cognitivo", "resonancia", "paraverbal", "scan", "inteligencia artificial", "emocional"), el bot responde automáticamente con la cita y el resumen relevante del estudio correspondiente.
+
+### Ejemplo de uso
+
+**Request:**
+```json
+{
+  "profile": "test",
+  "message": "El análisis de microexpresion es clave para detectar mentiras."
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Conversation created",
+  "study_citation": "Ekman, P., & Friesen, W. V. (1975). Unmasking the face.",
+  "study_summary": "Identificación de microexpresiones faciales involuntarias que delatan emociones ocultas."
+}
+```
+
+## Ejemplo de respuesta automática con cita y consejos
+
+Si envías un mensaje a `/api/conversations` que contenga una palabra clave relacionada con manipulación o engaño, la respuesta incluirá:
+- Mensaje de éxito
+- Cita y resumen científico relevante
+- Guion de consejos para afrontar la situación
+
+**Request:**
+```json
+{
+  "profile": "test",
+  "message": "El análisis de microexpresion es clave para detectar mentiras."
+}
+```
+
+**Response:**
+```json
+{
+  "message": "Conversation created",
+  "study_citation": "Ekman, P., & Friesen, W. V. (1975). Unmasking the face.",
+  "study_summary": "Identificación de microexpresiones faciales involuntarias que delatan emociones ocultas.",
+  "advice": [
+    "Mantén la calma: No respondas con ira ni impulsividad, respira profundo antes de actuar.",
+    "No te culpes: Recuerda que la responsabilidad de la mentira o manipulación es del depredador, no tuya.",
+    "Documenta los hechos: Lleva un registro de las situaciones, mensajes o comportamientos sospechosos.",
+    "Evita la confrontación directa: Si es posible, busca el diálogo en un entorno seguro y sin acusaciones.",
+    "Haz preguntas abiertas: Permite que la otra persona explique, en vez de acusar directamente.",
+    "Busca apoyo: Habla con amigos, familiares o un profesional sobre lo que estás viviendo.",
+    "Pon límites claros: Expresa de manera asertiva lo que no toleras y cuáles son tus valores.",
+    "No te aísles: Mantén tu red de apoyo y actividades que te hagan sentir bien.",
+    "Infórmate: Aprende sobre técnicas de manipulación y cómo protegerte emocionalmente.",
+    "Si la situación es grave, busca ayuda profesional o legal: Tu bienestar y seguridad son lo más importante."
+  ]
+}
+```

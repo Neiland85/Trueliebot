@@ -44,6 +44,7 @@ jobs:
           DATABASE_NAME: conversations.db
           FLASK_ENV: development
           DEBUG: "True"
+          MOCK_OPENAI: "1"
         run: |
           source .venv/bin/activate
           export PYTHONPATH=$(pwd)
