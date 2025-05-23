@@ -6,6 +6,7 @@ Incluye pruebas de endpoints, validaciones y lógica de negocio.
 import pytest
 import json
 from app import app
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -132,8 +133,11 @@ def test_invalid_endpoint(client):
     assert response.status_code == 404
 
 
-def test_openai_chat(client):
-    """Prueba la integración con la API de OpenAI para generación de respuestas."""
+@patch("openai.ChatCompletion.create")
+def test_openai_chat(mock_openai, client):
+    """Prueba la integración con la API de OpenAI para generación de respuestas (mockeada)."""
+    # Mock OpenAI API response
+    mock_openai.return_value = type("obj", (object,), {"__str__": lambda self: '{"choices": [{"message": {"content": "París"}}]}'})()
     response = client.post(
         "/api/openai",
         data=json.dumps({"prompt": "¿Cuál es la capital de Francia?"}),
@@ -141,7 +145,8 @@ def test_openai_chat(client):
     )
     assert response.status_code == 200
     data = response.get_json()
-    assert "raw_response" in data or "response" in data
+    assert "response" in data
+    assert "París" in data.get("response", "")
 
 
 def pytest_generate_tests(metafunc):
