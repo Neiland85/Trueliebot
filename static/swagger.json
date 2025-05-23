@@ -1,0 +1,46 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "TruelieBot API",
+    "version": "1.0.0",
+    "description": "API para gestión de conversaciones."
+  },
+  "paths": {
+    "/api/conversations": {
+      "get": {
+        "summary": "Obtener conversaciones por perfil (con paginación)",
+        "parameters": [
+          {"name": "profile", "in": "query", "required": false, "schema": {"type": "string"}},
+          {"name": "limit", "in": "query", "required": false, "schema": {"type": "integer"}},
+          {"name": "offset", "in": "query", "required": false, "schema": {"type": "integer"}}
+        ],
+        "responses": {
+          "200": {"description": "Lista de conversaciones"},
+          "404": {"description": "No se encontraron conversaciones"}
+        }
+      },
+      "post": {
+        "summary": "Crear una nueva conversación",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "profile": {"type": "string"},
+                  "message": {"type": "string"}
+                },
+                "required": ["profile", "message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {"description": "Conversación creada"},
+          "400": {"description": "Datos inválidos"}
+        }
+      }
+    }
+  }
+}
