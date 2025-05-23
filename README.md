@@ -279,3 +279,127 @@ Si envías un mensaje a `/api/conversations` que contenga una palabra clave rela
   ]
 }
 ```
+
+## Endpoints de Feedback y Aprendizaje Continuo
+
+### Feedback sobre análisis
+- `POST /api/feedback`
+  - Registra feedback de usuario sobre un análisis.
+  - JSON: `{ "analisis_id": int, "usuario_id": int, "tipo": "positivo|negativo|sugerencia", "comentario": str }`
+- `GET /api/feedback/<analisis_id>`
+  - Consulta feedback asociado a un análisis.
+
+### Patrones de manipulación
+- `POST /api/patrones`
+  - Registra un nuevo patrón (expresión regular, descripción, validado, creado_por).
+- `GET /api/patrones`
+  - Lista todos los patrones registrados.
+
+### Estadísticas de aprendizaje
+- `GET /api/estadisticas`
+  - Devuelve estadísticas básicas de uso, feedback y patrones validados.
+
+### Ejemplo de flujo
+1. El usuario o sistema registra un análisis de conversación.
+2. Se puede registrar feedback sobre ese análisis (positivo, negativo, sugerencia).
+3. Se pueden registrar y consultar patrones de manipulación detectados.
+4. El bot puede consultar estadísticas para ajustar su comportamiento o mostrar resultados a administradores.
+
+Estos endpoints permiten realimentar y mejorar el bot de forma continua, facilitando el aprendizaje y la adaptación a nuevos patrones de manipulación o feedback de usuarios.
+
+## Tabla resumen de endpoints REST
+
+| Endpoint                | Método | Descripción                                                      |
+|------------------------|--------|------------------------------------------------------------------|
+| /api/feedback          | POST   | Registrar feedback de usuario sobre un análisis                  |
+| /api/feedback/<id>     | GET    | Consultar feedback asociado a un análisis                        |
+| /api/patrones          | POST   | Registrar un nuevo patrón de manipulación                        |
+| /api/patrones          | GET    | Listar todos los patrones registrados                            |
+| /api/estadisticas      | GET    | Consultar estadísticas de uso, feedback y patrones validados     |
+
+---
+
+## Diagrama de flujo: Realimentación y Aprendizaje
+
+```
+Usuario/Sistema
+     |
+     v
+[Registrar análisis de conversación]
+     |
+     v
+[Registrar feedback sobre análisis] <---+         +---> [Registrar patrón de manipulación]
+     |                                  |         |
+     v                                  |         v
+[Base de datos sofisticada] <-----------+----+-->[Consultar patrones]
+     |
+     v
+[Consultar estadísticas] <--------------+----+-->[Ajuste del bot / Aprendizaje]
+```
+
+---
+
+## Exportar/Importar colección Postman
+
+1. **Exportar colección:**
+   - En Postman, haz clic derecho sobre la colección > Exportar > Formato v2.1.
+   - Guarda el archivo `.json` y compártelo con tu equipo.
+2. **Importar colección:**
+   - Haz clic en “Importar” en Postman y selecciona el archivo `.json` exportado.
+
+Puedes automatizar esto con scripts o integrarlo en tu CI/CD si lo deseas.
+
+---
+
+## Ejemplos avanzados de uso con curl y Postman
+
+### Registrar feedback con autenticación (ejemplo de header opcional)
+```sh
+curl -X POST http://localhost:5000/api/feedback \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <tu_token>" \
+  -d '{"analisis_id": 1, "usuario_id": 1, "tipo": "positivo", "comentario": "¡Muy útil!"}'
+```
+
+### Consultar patrones con header personalizado
+```sh
+curl http://localhost:5000/api/patrones \
+  -H "X-Admin: true"
+```
+
+### Importar endpoints en Postman
+- Copia la URL y el body de los ejemplos anteriores.
+- Añade headers personalizados según sea necesario (por ejemplo, `Authorization`).
+- Guarda las respuestas para análisis posterior.
+
+---
+
+## Preguntas frecuentes (FAQ)
+
+**¿Puedo registrar feedback anónimo?**
+- Sí, pero se recomienda asociar el feedback a un usuario para mejor trazabilidad.
+
+**¿Qué ocurre si un patrón no es validado?**
+- No será usado por el bot hasta que un administrador lo valide.
+
+**¿Cómo se usan las estadísticas?**
+- Permiten a admins y desarrolladores ajustar reglas, detectar abusos y mejorar el aprendizaje automático.
+
+**¿Puedo automatizar la exportación/importación de Postman?**
+- Sí, usando scripts o integraciones de CI/CD.
+
+**¿Qué hago si detecto un falso positivo en un patrón?**
+- Marca el patrón como no validado y revisa su expresión regular.
+
+---
+
+## Buenas prácticas para administradores y desarrolladores
+
+- **Revisar y validar patrones:** Antes de marcar un patrón como validado, revisa su efectividad y evita falsos positivos.
+- **Monitorizar feedback:** Analiza el feedback negativo para mejorar los modelos y reglas del bot.
+- **Backup regular:** Realiza copias de seguridad de la base de datos `trueliebot_sophisticated.db` para evitar pérdida de datos.
+- **Auditoría de logs:** Consulta la tabla `logs` para detectar anomalías, abusos o patrones emergentes.
+- **Actualización de modelos:** Si integras aprendizaje automático, reentrena los modelos periódicamente usando los datos y feedback almacenados.
+- **Privacidad:** No almacenes datos personales sensibles sin consentimiento y cumple la normativa vigente (GDPR, LOPD, etc).
+- **Pruebas automatizadas:** Mantén y amplía los tests en `test_app.py` para asegurar la calidad y robustez de la API.
+- **Documentación:** Actualiza el README y la documentación de endpoints cada vez que añadas nuevas funcionalidades.
