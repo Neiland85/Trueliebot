@@ -3,24 +3,49 @@
   "info": {
     "title": "TruelieBot API",
     "version": "1.0.0",
-    "description": "API para gestión de conversaciones."
+    "description": "API para gesti\u00f3n de conversaciones."
   },
   "paths": {
     "/api/conversations": {
       "get": {
-        "summary": "Obtener conversaciones por perfil (con paginación)",
+        "summary": "Obtener conversaciones por perfil (con paginaci\u00f3n)",
         "parameters": [
-          {"name": "profile", "in": "query", "required": false, "schema": {"type": "string"}},
-          {"name": "limit", "in": "query", "required": false, "schema": {"type": "integer"}},
-          {"name": "offset", "in": "query", "required": false, "schema": {"type": "integer"}}
+          {
+            "name": "profile",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          }
         ],
         "responses": {
-          "200": {"description": "Lista de conversaciones"},
-          "404": {"description": "No se encontraron conversaciones"}
+          "200": {
+            "description": "Lista de conversaciones"
+          },
+          "404": {
+            "description": "No se encontraron conversaciones"
+          }
         }
       },
       "post": {
-        "summary": "Crear una nueva conversación",
+        "summary": "Crear una nueva conversaci\u00f3n",
         "requestBody": {
           "required": true,
           "content": {
@@ -28,19 +53,37 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "profile": {"type": "string"},
-                  "message": {"type": "string"}
+                  "profile": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
                 },
-                "required": ["profile", "message"]
+                "required": [
+                  "profile",
+                  "message"
+                ]
               }
             }
           }
         },
         "responses": {
-          "201": {"description": "Conversación creada"},
-          "400": {"description": "Datos inválidos"}
+          "201": {
+            "description": "Conversaci\u00f3n creada"
+          },
+          "400": {
+            "description": "Datos inv\u00e1lidos"
+          }
         }
       }
+    }
+  },
+  "securityDefinitions": {
+    "bearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header"
     }
   }
 }

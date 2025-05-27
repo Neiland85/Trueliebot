@@ -14,7 +14,7 @@ studies = [
         "year": 1975,
         "summary": "Identificación de microexpresiones faciales involuntarias que delatan emociones ocultas.",
         "impact": "Inspiró la serie Lie to Me y es usado por el FBI, la CIA y policías internacionales.",
-        "citation": "Ekman, P., & Friesen, W. V. (1975). Unmasking the face."
+        "citation": "Ekman, P., & Friesen, W. V. (1975). Unmasking the face.",
     },
     {
         "id": 2,
@@ -23,7 +23,7 @@ studies = [
         "institution": "University of Portsmouth",
         "year": 2006,
         "summary": "Mentir consume más recursos cognitivos que decir la verdad. Aumentar la carga cognitiva mejora la detección.",
-        "citation": "Vrij, A., Fisher, R. P., Mann, S., & Leal, S. (2006)."
+        "citation": "Vrij, A., Fisher, R. P., Mann, S., & Leal, S. (2006).",
     },
     {
         "id": 3,
@@ -32,7 +32,7 @@ studies = [
         "institution": "University of Pennsylvania",
         "year": 2002,
         "summary": "Diferentes áreas cerebrales (corteza prefrontal) se activan al mentir vs. decir la verdad.",
-        "citation": "Langleben, D. D. et al. (2002)."
+        "citation": "Langleben, D. D. et al. (2002).",
     },
     {
         "id": 4,
@@ -41,7 +41,7 @@ studies = [
         "institution": "University of California, Santa Barbara",
         "year": 2003,
         "summary": "No hay una única señal verbal infalible, pero patrones como menor fluidez, más justificaciones y menos detalles sensoriales son comunes en mentirosos.",
-        "citation": "DePaulo, B. M., Lindsay, J. J., Malone, B. E., et al. (2003)."
+        "citation": "DePaulo, B. M., Lindsay, J. J., Malone, B. E., et al. (2003).",
     },
     {
         "id": 5,
@@ -50,7 +50,7 @@ studies = [
         "institution": "SCAN",
         "year": 1996,
         "summary": "Las estructuras lingüísticas y omisiones revelan engaño o manipulación.",
-        "citation": "Sapir, A. (1996)."
+        "citation": "Sapir, A. (1996).",
     },
     {
         "id": 6,
@@ -59,7 +59,7 @@ studies = [
         "institution": "MIT, Carnegie Mellon",
         "year": 2020,
         "summary": "Algoritmos de IA analizan patrones de voz, pausas, expresiones y textos. Algunos modelos superan a humanos en precisión (>75%).",
-        "citation": "Estudios recientes (2020)."
+        "citation": "Estudios recientes (2020).",
     },
     {
         "id": 7,
@@ -67,20 +67,47 @@ studies = [
         "authors": "Mark Frank & Thomas Feeley",
         "institution": "University at Buffalo",
         "year": 2003,
-        "summary": "Los intentos de control emocional ante una mentira suelen fallar levemente en la cara, especialmente en los ojos y boca.",
-        "citation": "Frank, M. G., & Feeley, T. H. (2003)."
-    }
+        "summary": "Los intentos de control emocional ante una mentira suelen fallar levemente en la expresión facial, especialmente en los ojos y boca.",
+        "citation": "Frank, M. G., & Feeley, T. H. (2003).",
+    },
 ]
+
 
 def get_study_citation_by_topic(topic):
     """Devuelve la cita y el resumen de un estudio relevante según el tema o palabra clave normalizada."""
+
     def normalize(text):
-        return unicodedata.normalize('NFKD', text).encode('ASCII', 'ignore').decode('utf-8').lower()
+        return (
+            unicodedata.normalize("NFKD", text)
+            .encode("ASCII", "ignore")
+            .decode("utf-8")
+            .lower()
+        )
+
     topic_norm = normalize(topic)
     topic_aliases = {
-        "fmri": ["fmri", "resonancia", "f m r i", "magnetic resonance", "resonancia cerebral"],
-        "resonancia": ["fmri", "resonancia", "f m r i", "magnetic resonance", "resonancia cerebral"],
-        "verbal": ["verbal", "paraverbal", "señal verbal", "señales verbales", "verbales", "verbalidad"],
+        "fmri": [
+            "fmri",
+            "resonancia",
+            "f m r i",
+            "magnetic resonance",
+            "resonancia cerebral",
+        ],
+        "resonancia": [
+            "fmri",
+            "resonancia",
+            "f m r i",
+            "magnetic resonance",
+            "resonancia cerebral",
+        ],
+        "verbal": [
+            "verbal",
+            "paraverbal",
+            "señal verbal",
+            "señales verbales",
+            "verbales",
+            "verbalidad",
+        ],
     }
     for s in studies:
         title_norm = normalize(s["title"])

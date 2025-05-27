@@ -2,8 +2,9 @@
 Módulo de utilidades para la gestión de la base de datos SQLite.
 Separa la lógica de acceso a datos de la lógica de rutas Flask.
 """
+
 import sqlite3
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 DB_NAME = "conversations.db"
 

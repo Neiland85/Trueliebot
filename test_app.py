@@ -3,10 +3,12 @@ Pruebas automáticas para la API de TruelieBot.
 Incluye pruebas de endpoints, validaciones y lógica de negocio.
 """
 
-import pytest
 import json
-from app import app
 from unittest.mock import patch
+
+import pytest
+
+from app import app
 
 
 @pytest.fixture
@@ -18,6 +20,7 @@ def client():
 def test_home(client):
     """Prueba que la página de inicio carga correctamente."""
     response = client.get("/")
+    assert response.status_code == 200
     assert "API de gestión de conversaciones activa." in response.data.decode("utf-8")
 
 
@@ -116,7 +119,10 @@ def test_post_conversations(client):
 
 def test_post_conversations_with_advice(client):
     """Debe devolver cita científica y consejos si el mensaje contiene una palabra clave de manipulación."""
-    data = {"profile": "test", "message": "El análisis de microexpresion es clave para detectar mentiras."}
+    data = {
+        "profile": "test",
+        "message": "El análisis de microexpresion es clave para detectar mentiras.",
+    }
     response = client.post("/api/conversations", json=data)
     assert response.status_code == 201
     json_data = response.get_json()
@@ -137,7 +143,11 @@ def test_invalid_endpoint(client):
 def test_openai_chat(mock_openai, client):
     """Prueba la integración con la API de OpenAI para generación de respuestas (mockeada)."""
     # Mock OpenAI API response
-    mock_openai.return_value = type("obj", (object,), {"__str__": lambda self: '{"choices": [{"message": {"content": "París"}}]}'})()
+    mock_openai.return_value = type(
+        "obj",
+        (object,),
+        {"__str__": lambda self: '{"choices": [{"message": {"content": "París"}}]}'},
+    )()
     response = client.post(
         "/api/openai",
         data=json.dumps({"prompt": "¿Cuál es la capital de Francia?"}),
@@ -192,7 +202,10 @@ def test_keyword_detection_variants(client, keyword_variant, message):
 
 def test_multiple_keywords_in_message(client):
     """Si hay varias palabras clave, debe devolver la cita del primer match."""
-    data = {"profile": "test", "message": "La microexpresión y la carga cognitiva son importantes."}
+    data = {
+        "profile": "test",
+        "message": "La microexpresión y la carga cognitiva son importantes.",
+    }
     response = client.post("/api/conversations", json=data)
     assert response.status_code == 201
     json_data = response.get_json()
@@ -204,7 +217,10 @@ def test_multiple_keywords_in_message(client):
 
 def test_no_keyword_no_citation(client):
     """No debe devolver cita ni consejos si no hay palabra clave relevante."""
-    data = {"profile": "test", "message": "Este mensaje es completamente neutro y no contiene palabras clave."}
+    data = {
+        "profile": "test",
+        "message": "Este mensaje es completamente neutro y no contiene palabras clave.",
+    }
     response = client.post("/api/conversations", json=data)
     assert response.status_code == 201
     json_data = response.get_json()
@@ -215,7 +231,10 @@ def test_no_keyword_no_citation(client):
 def test_edge_cases_keywords(client):
     """Prueba casos límite: palabra clave como parte de otra palabra, mensaje vacío, solo símbolos, repetición."""
     # Palabra clave como parte de otra palabra irrelevante
-    data = {"profile": "test", "message": "microexpresionismo no es lo mismo que microexpresión."}
+    data = {
+        "profile": "test",
+        "message": "microexpresionismo no es lo mismo que microexpresión.",
+    }
     response = client.post("/api/conversations", json=data)
     # Debe detectar microexpresión porque está presente como palabra
     json_data = response.get_json()
@@ -234,7 +253,10 @@ def test_edge_cases_keywords(client):
     json_data = response.get_json()
     assert "study_citation" not in json_data
     # Palabra clave repetida
-    data = {"profile": "test", "message": "microexpresión microexpresión microexpresión"}
+    data = {
+        "profile": "test",
+        "message": "microexpresión microexpresión microexpresión",
+    }
     response = client.post("/api/conversations", json=data)
     assert response.status_code == 201
     json_data = response.get_json()

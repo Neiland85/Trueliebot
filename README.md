@@ -122,7 +122,19 @@ Copiar código
    git push heroku main
    heroku open
    ```
+## Autenticación de endpoints
 
+Los endpoints sensibles (/api/feedback, /api/patrones, /api/estadisticas) ahora están protegidos con autenticación JWT.
+
+### Obtener un token de autenticación
+
+Para obtener un token, utiliza el nuevo endpoint `/api/auth/login`:
+
+```sh
+curl -X POST http://localhost:5000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"usuario_id": 1, "password": "trueliebot-admin-demo", "role": "admin"}'
+```
 ### Render
 1. Ve a https://dashboard.render.com y crea un nuevo Web Service.
 2. Elige tu repo y configura:
@@ -147,7 +159,7 @@ docker build -t trueliebot .
 docker run -p 5000:5000 trueliebot
 ```
 
-## Endpoint de integración con OpenAI
+### Pruebas Endpoint de integración con OpenAI
 
 ### `/api/openai` (POST)
 
@@ -403,3 +415,37 @@ curl http://localhost:5000/api/patrones \
 - **Privacidad:** No almacenes datos personales sensibles sin consentimiento y cumple la normativa vigente (GDPR, LOPD, etc).
 - **Pruebas automatizadas:** Mantén y amplía los tests en `test_app.py` para asegurar la calidad y robustez de la API.
 - **Documentación:** Actualiza el README y la documentación de endpoints cada vez que añadas nuevas funcionalidades.
+
+---
+
+### **Verificación de token de autenticación**
+
+Para verificar el estado de un token de autenticación, utiliza el endpoint `/api/auth/verify`:
+
+```sh
+curl -X GET http://localhost:5000/api/auth/verify \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..."
+```
+
+Este endpoint te permitirá comprobar si un token es válido y está activo.
+
+```VALUES ('Admin Demo', 'admin@trueliebot.com', 'pbkdf2:sha256:150000$trueliebot-admin-demo', 'admin');INSERT INTO usuarios (nombre, email, password_hash, rol)-- Usuario administrador (contraseña: trueliebot-admin-demo)VALUES ('Usuario Demo', 'demo@trueliebot.com', 'pbkdf2:sha256:150000$trueliebot-demo', 'user');INSERT INTO usuarios (nombre, email, password_hash, rol)-- Usuario de prueba (contraseña: trueliebot-demo));    fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP    activo BOOLEAN NOT NULL DEFAULT TRUE,    rol TEXT NOT NULL DEFAULT 'user',    password_hash TEXT NOT NULL,    email TEXT UNIQUE NOT NULL,    nombre TEXT NOT NULL,    id INTEGER PRIMARY KEY AUTOINCREMENT,CREATE TABLE IF NOT EXISTS usuarios (```sqlSi quieres implementar una autenticación completa, deberías crear una tabla de usuarios en la base de datos:## 5. Añadir tabla de usuarios (opcional pero recomendado)
+
+```sql
+CREATE TABLE IF NOT EXISTS usuarios (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nombre TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  rol TEXT NOT NULL DEFAULT 'user'
+);
+```
+Este es un ejemplo de cómo podrías estructurar la tabla de usuarios en SQLite. Asegúrate de adaptarlo a tu base de datos y lenguaje de base de datos.
+**Response:**
+```json
+{
+  "message": "Token válido",
+  "user_id": 1,
+  "role": "user"
+}
+```

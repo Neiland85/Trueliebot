@@ -9,4 +9,4 @@ black==24.3.0
 openai==0.28.0
 marshmallow==3.21.1
 flask-swagger-ui==4.11.1
-
+PyJWT==2.8.0 
