@@ -16,5 +16,10 @@
         "**/.settings": true,
         "**/.exchange_modules_tmp": true,
         ".mule": true
-    }
+    },
+    "python.testing.pytestArgs": [
+        "."
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 }
