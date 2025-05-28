@@ -1,4 +1,37 @@
 {
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "debugpy",
+            "request": "launch",
+            "name": "Debug app.py",
+            "program": "${workspaceFolder}/${input:entryPoint}",
+            "envFile": "${workspaceFolder}/.env",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "cwd": "${workspaceFolder}"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "entryPoint",
+            "type": "pickString",
+            "description": "Selecciona el archivo principal para iniciar la depuración",
+            "options": [
+                "app.py",
+                "advice_script.py",
+                "auth.py",
+                "db.py",
+                "initialize_db.py",
+                "initialize_sophisticated_db.py",
+                "initialize_users.py",
+                "lie_detection_studies.py",
+                "logger.py",
+                "migrate_old_to_sophisticated.py",
+                "routes_conversations.py"
+            ]
+        }
+    ],
     "files.exclude": {
         "**/.git": true,
         "**/.svn": true,
@@ -21,5 +54,8 @@
         "."
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "nextflow.telemetry.enabled": true,
+    "github.copilot.enable": true,
+    "github.copilot.inlineSuggest.enable": true
 }

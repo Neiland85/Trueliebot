@@ -28,9 +28,9 @@ from flask import Flask, current_app, jsonify, request
 # Constantes de configuración
 TOKEN_HEADER = "Authorization"
 TOKEN_PREFIX = "Bearer "
-SECRET_KEY = os.environ.get(
-    "JWT_SECRET_KEY", "trueliebot-secret-key-change-in-production"
-)
+SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("La variable de entorno JWT_SECRET_KEY es obligatoria para la seguridad JWT.")
 TOKEN_EXPIRATION_MINUTES = int(os.environ.get("TOKEN_EXPIRATION_MINUTES", 60))
 
 # Configurar mensajes de error
@@ -115,8 +115,10 @@ def generate_token(user_id: int, role: str = "user") -> str:
     payload = {
         "user_id": user_id,
         "role": role,
-        "exp": datetime.datetime.utcnow()
-        + datetime.timedelta(minutes=TOKEN_EXPIRATION_MINUTES),
+        "exp": (
+            datetime.datetime.now(datetime.timezone.utc)
+            + datetime.timedelta(minutes=TOKEN_EXPIRATION_MINUTES)
+        ),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
 
@@ -164,9 +166,8 @@ def token_required(f: Callable) -> Callable:
 
         # Obtener token del header Authorization
         auth_header = request.headers.get("Authorization")
-        if auth_header:
-            if auth_header.startswith("Bearer "):
-                token = auth_header.split(" ")[1]
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
 
         if not token:
             return (
@@ -216,9 +217,8 @@ def admin_required(f: Callable) -> Callable:
 
         # Obtener token del header Authorization
         auth_header = request.headers.get("Authorization")
-        if auth_header:
-            if auth_header.startswith("Bearer "):
-                token = auth_header.split(" ")[1]
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.split(" ")[1]
 
         if not token:
             return (
@@ -284,7 +284,20 @@ def create_auth_routes(app: Flask) -> None:
             # Usar esquema Marshmallow para validación
             try:
                 from schemas import LoginSchema
+                from marshmallow import ValidationError  # <-- Mover esta importación fuera del try
 
+            except ImportError as err:
+                return (
+                    jsonify(
+                        {
+                            "message": "Error importando dependencias de validación",
+                            "error": str(err),
+                        }
+                    ),
+                    500,
+                )
+
+            try:
                 login_data = LoginSchema().load(data)
             except ValidationError as err:
                 return (
@@ -307,19 +320,19 @@ def create_auth_routes(app: Flask) -> None:
 
                 # Validar credenciales contra la base de datos
                 success, user = validate_credentials(
-                    conn, login_data["usuario_id"], login_data["password"]
+                    conn, login_data["username"], login_data["password"]
                 )
 
                 if success and user:
                     # Generar token
-                    token = generate_token(user["id"], user["rol"])
+                    token = generate_token(user["id"], user["role"])
 
                     return jsonify(
                         {
                             "token": token,
                             "user_id": user["id"],
                             "nombre": user["nombre"],
-                            "role": user["rol"],
+                            "role": user["role"],
                             "expires_in": TOKEN_EXPIRATION_MINUTES * 60,
                         }
                     )

@@ -1,14 +1,124 @@
-from flask import Flask, jsonify, request
+"""
+Rutas y lógica de negocio para la gestión de conversaciones y la integración con OpenAI.
+Incluye validación, inserción, consulta y justificación científica automática.
+"""
+
+import os
+import openai
+from flask import Blueprint, jsonify, request
+from marshmallow import Schema, ValidationError, fields
+
+from advice_script import get_advice_script
+from db import fetch_conversations, insert_conversation
+from utils.keyword_detection import detect_keyword_and_science
 
 from auth import (admin_required, create_auth_routes, initialize_auth,
                   token_required)
 from db import get_db_connection
 
-app = Flask(__name__)
+conversations_bp = Blueprint("conversations", __name__)
 
-# Inicializar autenticación
-initialize_auth(app)
-create_auth_routes(app)
+
+class ConversationSchema(Schema):
+    profile = fields.Str(required=True)
+    message = fields.Str(required=True)
+
+
+conversation_schema = ConversationSchema()
+
+
+@conversations_bp.route("/api/conversations", methods=["GET"])
+def get_conversations():
+    """Obtiene conversaciones para un perfil dado, con paginación."""
+    try:
+        profile = request.args.get("profile", "default")
+        try:
+            limit = int(request.args.get("limit", 20))
+            offset = int(request.args.get("offset", 0))
+        except ValueError:
+            return jsonify({"error": "Parámetros de paginación inválidos"}), 400
+
+        conversations = fetch_conversations(profile, limit, offset)
+        if conversations:
+            return jsonify({"data": conversations, "status": "success"}), 200
+        return jsonify({"message": "No conversations found"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
+
+@conversations_bp.route("/api/conversations", methods=["POST"])
+def post_conversations():
+    """Crea una nueva conversación y cita estudios científicos si corresponde."""
+    try:
+        data = request.get_json()
+        try:
+            validated = conversation_schema.load(data)
+        except ValidationError as err:
+            return jsonify({"error": err.messages}), 400
+
+        profile = validated.get("profile")
+        message = validated.get("message")
+        insert_conversation(profile, message)
+
+        result = detect_keyword_and_science(message)
+        if result:
+            return jsonify({"message": "Conversation created", **result}), 201
+        return jsonify({"message": "Conversation created"}), 201
+    except ValidationError as err:
+        return jsonify({"error": err.messages}), 400
+    except Exception as e:
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
+
+@conversations_bp.route("/api/openai", methods=["POST"])
+def openai_chat():
+    """Endpoint para interactuar con OpenAI GPT usando un prompt enviado por el usuario."""
+    try:
+        data = request.get_json()
+        prompt = data.get("prompt")
+        if not prompt:
+            return jsonify({"error": "Falta el campo 'prompt'"}), 400
+
+        openai.api_key = os.environ.get("OPENAI_API_KEY")
+        if os.environ.get("MOCK_OPENAI", "0") == "1":
+            response_json = {"response": "París"}
+        else:
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[{"role": "user", "content": prompt}],
+                    max_tokens=100,
+                )
+                answer = (
+                    response.get("choices", [{}])[0]
+                    .get("message", {})
+                    .get("content", "")
+                    .strip()
+                )
+                response_json = {"response": answer}
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        result = detect_keyword_and_science(prompt)
+        if result:
+            response_json.update(result)
+        return jsonify(response_json)
+    except Exception as e:
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
+
+@conversations_bp.route("/api/advice", methods=["GET"])
+def get_advice():
+    """Devuelve un guion de consejos para víctimas de mentiras o manipulación."""
+    try:
+        return jsonify({"advice": get_advice_script()})
+    except Exception as e:
+        return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
+
+
+@conversations_bp.route("/")
+def home():
+    return "API de gestión de conversaciones activa.", 200
 
 
 @app.route("/api/feedback", methods=["POST"])
@@ -108,18 +218,17 @@ def obtener_feedback(user_data, analisis_id):
         feedback_items = cursor.fetchall()
 
         result = []
-        for item in feedback_items:
-            result.append(
-                {
-                    "id": item[0],
-                    "analisis_id": item[1],
-                    "usuario_id": item[2],
-                    "tipo": item[3],
-                    "comentario": item[4],
-                    "fecha_creacion": item[5],
-                }
-            )
-
+        result.extend(
+            {
+                "id": item[0],
+                "analisis_id": item[1],
+                "usuario_id": item[2],
+                "tipo": item[3],
+                "comentario": item[4],
+                "fecha_creacion": item[5],
+            }
+            for item in feedback_items
+        )
         return jsonify({"feedback": result})
 
     except Exception as e:
@@ -240,18 +349,17 @@ def obtener_patrones(user_data):
         patrones = cursor.fetchall()
 
         result = []
-        for p in patrones:
-            result.append(
-                {
-                    "id": p[0],
-                    "descripcion": p[1],
-                    "expresion_regular": p[2],
-                    "creado_por": p[3],
-                    "validado": bool(p[4]),
-                    "fecha_creacion": p[5],
-                }
-            )
-
+        result.extend(
+            {
+                "id": p[0],
+                "descripcion": p[1],
+                "expresion_regular": p[2],
+                "creado_por": p[3],
+                "validado": bool(p[4]),
+                "fecha_creacion": p[5],
+            }
+            for p in patrones
+        )
         return jsonify({"patrones": result})
 
     except Exception as e:
@@ -283,9 +391,11 @@ def obtener_estadisticas(user_data):
                 SUM(CASE WHEN validado = 1 THEN 1 ELSE 0 END) as validados,
                 SUM(CASE WHEN validado = 0 THEN 1 ELSE 0 END) as pendientes
             FROM patrones
-        """
+            """
         )
         patrones_stats = cursor.fetchone()
+        validados = patrones_stats[0] if patrones_stats[0] is not None else 0
+        pendientes = patrones_stats[1] if patrones_stats[1] is not None else 0
 
         # Análisis por día (últimos 7 días)
         cursor.execute(
@@ -305,8 +415,8 @@ def obtener_estadisticas(user_data):
             "conversaciones": {"total": total_conversaciones},
             "feedback": {},
             "patrones": {
-                "validados": patrones_stats[0] if patrones_stats[0] else 0,
-                "pendientes": patrones_stats[1] if patrones_stats[1] else 0,
+                "validados": validados,
+                "pendientes": pendientes,
             },
             "analisis_ultimos_7_dias": [],
         }

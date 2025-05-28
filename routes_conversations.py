@@ -15,6 +15,7 @@ from marshmallow import Schema, ValidationError, fields
 from advice_script import get_advice_script
 from db import fetch_conversations, insert_conversation
 from lie_detection_studies import get_study_citation_by_topic
+from utils.keyword_detection import detect_keyword_and_science
 
 conversations_bp = Blueprint("conversations", __name__)
 
@@ -25,6 +26,103 @@ class ConversationSchema(Schema):
 
 
 conversation_schema = ConversationSchema()
+import pytest
+from routes_conversations import normalize
+
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        # Happy path: accented characters
+        ("Canción", "cancion"),
+        ("niño", "nino"),
+        ("Árbol", "arbol"),
+        ("MÚSICA", "musica"),
+        ("pingüino", "pinguino"),
+        # Happy path: mixed case and special chars
+        ("¡Hola, Señor!", "hola, senor!"),
+        ("El café está frío.", "el cafe esta frio."),
+        ("mañana será otro día", "manana sera otro dia"),
+        # Happy path: already normalized
+        ("python", "python"),
+        ("12345", "12345"),
+        # Edge: empty string
+        ("", ""),
+        # Edge: only accents
+        ("áéíóúüñ", "aeiouun"),
+        # Edge: only non-ASCII symbols
+        ("©®™", ""),
+        # Edge: whitespace only
+        ("   ", "   "),
+        # Edge: tabs and newlines
+        ("\t\n", "\t\n"),
+        # Edge: emoji and symbols
+        ("hello 😊", "hello "),
+        ("💡⚡", ""),
+        # Edge: combining characters
+        ("Cafe\u0301", "cafe"),  # 'e' + combining acute
+        # Edge: mixed ASCII and non-ASCII
+        ("España 2024!", "espana 2024!"),
+        # Edge: non-Latin script
+        ("Привет", ""),  # Cyrillic
+        ("你好", ""),    # Chinese
+        ("こんにちは", ""),  # Japanese
+    ],
+    ids=[
+        "accented-cancion",
+        "accented-nino",
+        "accented-arbol",
+        "upper-musica",
+        "umlaut-pinguino",
+        "punctuation-senor",
+        "cafe-frio",
+        "manana-sera",
+        "already-normalized",
+        "numbers-only",
+        "empty-string",
+        "only-accents",
+        "only-non-ascii-symbols",
+        "whitespace-only",
+        "tabs-newlines",
+        "emoji-in-text",
+        "emoji-only",
+        "combining-acute",
+        "mixed-ascii-non-ascii",
+        "cyrillic",
+        "chinese",
+        "japanese",
+    ]
+)
+def test_normalize_various_cases(text, expected):
+
+    # Act
+    result = normalize(text)
+
+    # Assert
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "bad_input,expected_exception",
+    [
+        (None, TypeError),
+        (123, TypeError),
+        (["hola"], TypeError),
+        ({"text": "hola"}, TypeError),
+        (b"hola", TypeError),
+    ],
+    ids=[
+        "none-input",
+        "int-input",
+        "list-input",
+        "dict-input",
+        "bytes-input",
+    ]
+)
+def test_normalize_type_errors(bad_input, expected_exception):
+
+    # Act & Assert
+    with pytest.raises(expected_exception):
+        normalize(bad_input)
 
 
 def normalize(text: str) -> str:
@@ -83,24 +181,9 @@ def post_conversations():
             ("emoción", ["emocional", "emoción"]),
         ]
 
-        for topic, keyword_list in keywords:
-            for k in keyword_list:
-                k_norm = normalize(k)
-                pattern = r"(^|\W)" + re.escape(k_norm) + r"(es|idad|al|ales)?($|\W)"
-                if re.search(pattern, normalized_message):
-                    cita, resumen = get_study_citation_by_topic(topic)
-                    if cita:
-                        return (
-                            jsonify(
-                                {
-                                    "message": "Conversation created",
-                                    "study_citation": cita,
-                                    "study_summary": resumen,
-                                    "advice": get_advice_script(),
-                                }
-                            ),
-                            201,
-                        )
+        result = detect_keyword_and_science(message)
+        if result:
+            return jsonify({"message": "Conversation created", **result}), 201
         return jsonify({"message": "Conversation created"}), 201
     except ValidationError as err:
         return jsonify({"error": err.messages}), 400
@@ -148,20 +231,8 @@ def openai_chat():
             ("emoción", ["emocional", "emoción"]),
         ]
 
-        for topic, keyword_list in keywords:
-            for k in keyword_list:
-                k_norm = normalize(k)
-                pattern = r"(^|\W)" + re.escape(k_norm) + r"(es|idad|al|ales)?($|\W)"
-                if re.search(pattern, normalized_prompt):
-                    cita, resumen = get_study_citation_by_topic(topic)
-                    if cita and resumen:
-                        response_json["study_citation"] = str(cita)
-                        response_json["study_summary"] = str(resumen)
-                        response_json["advice"] = "\n".join(get_advice_script())
-                    break
-            else:
-                continue
-            break
+        if result := detect_keyword_and_science(prompt):
+            response_json |= result
         return jsonify(response_json)
     except Exception as e:
         return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
@@ -176,15 +247,6 @@ def get_advice():
         return jsonify({"error": f"Internal Server Error: {str(e)}"}), 500
 
 
-my_list = ["a", "b", "c"]
-# Acceso por índice
-value = (
-    my_list[0] if my_list else None
-)  # Accede al primer elemento si la lista no está vacía
-
-if isinstance(my_object, dict):
-    value = my_object.get("key", "default_value")
-else:
-    value = None  # Manejo de casos donde no es un diccionario
-
-print(type(my_object))
+@conversations_bp.route("/")
+def home():
+    return "API de gestión de conversaciones activa.", 200
