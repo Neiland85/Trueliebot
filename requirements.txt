@@ -10,3 +10,4 @@ openai==0.28.0
 marshmallow==3.21.1
 flask-swagger-ui==4.11.1
 
+aiohttp>=3.12.14 # not directly required, pinned by Snyk to avoid a vulnerability
